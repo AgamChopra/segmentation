@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 
 def load_dcm_as_norm_np(path = None, plot = False):
+
     if path != None:
         dcm = pydicom.read_file(path)
         print(dcm)
@@ -18,6 +19,7 @@ def load_dcm_as_norm_np(path = None, plot = False):
             plt.show()
             print(data_norm.shape)
         return data_norm
+        
     else:
         print('Warning: No file path detected!')
         return None
