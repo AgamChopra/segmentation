@@ -25,7 +25,8 @@ def load_dcm_as_np(path = None, plot = False, norm = True):
     if path != None:
         dcm = pydicom.read_file(path + '.dcm')
         
-        meta = str(dcm.file_meta)
+        #meta = str(dcm.file_meta)
+        meta = str(dcm)
             
         data = apply_modality_lut(dcm.pixel_array, dcm)
         
