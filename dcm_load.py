@@ -24,6 +24,8 @@ def load_dcm_as_np(path = None, plot = False, norm = True):
     """
     if path != None:
         dcm = pydicom.read_file(path + '.dcm')
+        
+        meta = str(dcm.file_meta)
             
         data = apply_modality_lut(dcm.pixel_array, dcm)
         
@@ -35,15 +37,20 @@ def load_dcm_as_np(path = None, plot = False, norm = True):
             plt.imshow(data,cmap='gray')
             plt.show()
             print(data.shape)
-        return data
+            
+        return data, meta
         
     else:
         print('Warning: No file path detected!')
         return None
     
     
-def save_as_tif(x,path):
+def save_as_tif(path,x,meta = None):
     Image.fromarray(x).save(path + '.tif')
+    
+    if meta != None:
+        with open(path + '.txt', "w") as text_file:
+            text_file.write(meta)
     
     
 def dcm2tif(path = None, plot = False, norm = True):
@@ -57,8 +64,8 @@ def dcm2tif(path = None, plot = False, norm = True):
     norm : binary, optional
         Does the image need to be normalized before return. The default is True.
     """
-    x = load_dcm_as_np(path, plot, norm)
-    save_as_tif(x, path)
+    x,meta = load_dcm_as_np(path, plot, norm)
+    save_as_tif(path,x,meta)
     
     
     
