@@ -3,6 +3,7 @@ import pydicom
 from pydicom.pixel_data_handlers.util import apply_modality_lut
 import matplotlib.pyplot as plt
 from PIL import Image
+from PIL.TiffTags import TAGS
 
 
 def load_dcm_as_np(path = None, plot = False, norm = True):
@@ -47,11 +48,7 @@ def load_dcm_as_np(path = None, plot = False, norm = True):
     
     
 def save_as_tif(path,x,meta = None):
-    Image.fromarray(x).save(path + '.tif')
-    
-    if meta != None:
-        with open(path + '.txt', "w") as text_file:
-            text_file.write(meta)
+    Image.fromarray(x).save(path + '.tif',description=meta)
     
     
 def dcm2tif(path = None, plot = False, norm = True):
@@ -71,7 +68,11 @@ def dcm2tif(path = None, plot = False, norm = True):
     
     
 def load_tif(path = None):
-    return np.array(Image.open(path + '.tif'))
+    with Image.open(path + '.tif') as img:
+        data = np.array(img)
+        meta = {TAGS[key] : img.tag[key] for key in img.tag.keys()}
+        orignal_meta_description = meta['ImageDescription'][0]
+    return data, meta, orignal_meta_description
     
     
 if __name__ == "__main__":
@@ -79,9 +80,9 @@ if __name__ == "__main__":
     for i in range(4):
         path = 'R:\Ilka_NU\img (%d)'%(i+1)
         dcm2tif(path = path,norm = True)
-        x = load_tif(path)
+        x,_,meta = load_tif(path)
         
         print(x.shape, type(x))
-        print(x)
+        print(meta)
         plt.imshow(x,cmap='gray')
         plt.show()
