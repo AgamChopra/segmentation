@@ -108,20 +108,10 @@ if __name__ == "__main__":
     for i in range(150):
         path = 'C:/Users/Ilka/Desktop/ilka dicom data/RM-S302 NIRC-8791-2001_S302-Zr89-VRC01-aCARIAS-24h-5Nov2020_PT_2020-11-05_115710_._(WB.CTAC).Body_n150__00000/image (%d)'%(i+1)
         dcm2tif(path = path,norm = True)
-<<<<<<< Updated upstream
         
         x,_,meta = load_tif(path)       
         print(x.shape, type(x))
         print(meta)
         plt.imshow(x,cmap='gray')
         plt.show()
-=======
-# =============================================================================
-#         x = load_tif(path)
-#         
-#         print(x.shape, type(x))
-#         print(x)
-#         plt.imshow(x,cmap='gray')
-#         plt.show()
-# =============================================================================
->>>>>>> Stashed changes
+
