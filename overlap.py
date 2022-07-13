@@ -13,7 +13,34 @@ from typing import Optional, Dict, TypeVar
 import numpy as np
 from matplotlib import pyplot as plt
 import SimpleITK as sitk
+import pydicom
 from pydicom import dcmread
+from tifffile import imwrite
+from stl import mesh
+
+def load_stl(path):
+    x = mesh.Mesh.from_file(path + '.stl')
+    x = x.data
+    xx = []
+    for i in range(len(x)):
+        if i < 10:
+            print(x[i][1][0])
+        xx.append(x[i][1][1])
+    x = np.asarray(xx,dtype='int')
+    print(np.max(x),np.min(x))
+    print(x.shape)
+    i,j,k = np.max(x[:,0])-np.min(x[:,0]),np.max(x[:,1])-np.min(x[:,1]),np.max(x[:,2])-np.min(x[:,2])
+    mins = np.asarray([np.min(x[:,0]),np.min(x[:,1]),np.min(x[:,2])])
+    xx = np.zeros((i+1,j+1,k+1))
+    print(xx.shape)
+    for i in range(len(x)):
+        xx[x[i,0]-mins[0],x[i,1]-mins[1],x[i,2]-mins[2]] = 1.
+    x = xx
+    print(x.shape)
+    for i in range(0,x.shape[2], 5):
+        plt.imshow(x[:,:,i].T)
+        plt.show()
+    return x
 
 T = TypeVar('T')
 
@@ -193,13 +220,13 @@ class PET(sitk.Image):
               
         plt.subplot(1,3,1)
         pt_arr = sitk.GetArrayFromImage(resampled_pt)
-        print(pt_arr.shape)
+        #print(pt_arr.shape)
         plt.imshow(pt_arr[slice_number,:,:])
         plt.title('PT slice'+str(slice_number))
         
         plt.subplot(1,3,2)
         ct_arr = sitk.GetArrayFromImage(ct_scan)
-        print(ct_arr.shape)
+        #print(ct_arr.shape)
         plt.imshow(ct_arr[slice_number,:,:])
         plt.title('CT slice'+str(slice_number))
         
@@ -243,18 +270,69 @@ class PET(sitk.Image):
             return suv
         else:
             return 1/a
-    
+       
         
-if __name__ == "__main__":
-    img_ct, _,_,_,_ = from_dicom_pet('C:/Users/Ilka/Desktop/Northwestern/Hope rotation/ct scan/RM-S302 NIRC-8791-2001_S302-Zr89-VRC01-aCARIAS-24h-5Nov2020_CT_2020-11-05_115133_._LDCT_n200__00000')
-    #print(img_ct)
+def load_meta(path):
+    meta = str(pydicom.read_file(path + '.dcm'))
+    return meta
+
+
+def save_as_tif(path,x,meta):
+    #Image.fromarray(x).save(path + 'combined.tif',description = meta)
+    imwrite(path + 'combined.tif', x,description=meta,)
+    return None
+
+
+def norm(x):
+    return((x - np.min(x))/(np.max(x) - np.min(x)))
+        
+        
+def combine_as_tif(out_path, path_stl, path_ct, path_pet, dcm_sample_ct = None, dcm_sample_pet = None):
+    meta = None
     
-    img_pet, df, factor, calc, metadata = from_dicom_pet('C:/Users/Ilka/Desktop/Northwestern/Hope rotation/pt scan/RM-S302 NIRC-8791-2001_S302-Zr89-VRC01-aCARIAS-24h-5Nov2020_PT_2020-11-05_115710_._(WB.CTAC).Body_n150__00000')
-    #print(img_pet, df, factor, calc, metadata)
+    img_ct,_,_,_,_ = from_dicom_pet(path_ct)
+    
+    img_pet, df, factor, calc, metadata = from_dicom_pet(path_pet)
     
     pet_warper = PET(img_pet, df, factor, calc, metadata)
     
-    pet_warper.resample_pet(img_ct)
+    img_pet = pet_warper.resample_pet(img_ct)
     
-    for i in range(0,200):
-        pet_warper.show_overlay(img_ct, i)
+    ct = sitk.GetArrayFromImage(img_ct)
+    
+    pet = sitk.GetArrayFromImage(img_pet)
+    
+    
+    if path_stl != None:
+        stl = load_stl(path_stl)
+        print(stl.shape)
+    else:
+        stl = np.zeros(ct.shape)
+    
+    x = np.asarray([norm(pet)*255,norm(ct)*255,norm(stl)*255])
+    x = x.astype('uint16')
+    print(x.shape)
+    
+    if dcm_sample_ct != None:
+        meta = load_meta(path_ct + dcm_sample_ct)
+        
+    if dcm_sample_pet != None:
+        meta = meta + load_meta(path_pet + dcm_sample_pet)
+        
+    save_as_tif(out_path,x,meta)
+    
+    return x
+    
+        
+if __name__ == "__main__":
+    #path_stl = 'C:/Users/Ilka/Desktop/Northwestern/Hope rotation/WholeBody'
+    path_stl = None
+    path_ct = 'C:/Users/Ilka/Desktop/Northwestern/Hope rotation/ct scan/RM-S302 NIRC-8791-2001_S302-Zr89-VRC01-aCARIAS-24h-5Nov2020_CT_2020-11-05_115133_._LDCT_n200__00000'
+    ct_img = '/1.2.840.113704.1.111.2148.1604598918.175'
+    path_pet = 'C:/Users/Ilka/Desktop/Northwestern/Hope rotation/pt scan/RM-S302 NIRC-8791-2001_S302-Zr89-VRC01-aCARIAS-24h-5Nov2020_PT_2020-11-05_115710_._(WB.CTAC).Body_n150__00000'
+    pet_img = '/1.3.46.670589.28.2.15.4.9181.50123.3.580.0.1604600691'
+    path_out = 'C:/Users/Ilka/Desktop/Northwestern/Hope rotation/'
+    x = combine_as_tif(path_out,path_stl,path_ct,path_pet,ct_img,pet_img)   
+    for i in range(x.shape[1]):
+        plt.imshow(x[:,i].T)
+        plt.show()
