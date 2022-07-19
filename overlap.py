@@ -287,7 +287,8 @@ def norm(x):
     return((x - np.min(x))/(np.max(x) - np.min(x)))
         
         
-def combine_as_tif(out_path, path_stl, path_ct, path_pet, dcm_sample_ct = None, dcm_sample_pet = None):
+#def combine_as_tif(out_path, path_stl, path_ct, path_pet, dcm_sample_ct = None, dcm_sample_pet = None):
+def combine_as_tif(out_path, path_ct, path_pet, dcm_sample_ct = None, dcm_sample_pet = None):
     meta = None
     
     img_ct,_,_,_,_ = from_dicom_pet(path_ct)
@@ -303,15 +304,19 @@ def combine_as_tif(out_path, path_stl, path_ct, path_pet, dcm_sample_ct = None, 
     pet = sitk.GetArrayFromImage(img_pet)
     
     
-    if path_stl != None:
-        stl = load_stl(path_stl)
-        print(stl.shape)
-    else:
-        stl = np.zeros(ct.shape)
+# =============================================================================
+#     if path_stl != None:
+#         stl = load_stl(path_stl)
+#         print(stl.shape)
+#     else:
+#         stl = np.zeros(ct.shape)
+#     
+#     x = np.asarray([norm(pet)*255,norm(ct)*255,norm(stl)*255])
+#     x = x.astype('uint16')
+# =============================================================================
+    x = np.asarray([norm(pet),norm(ct)])
     
-    x = np.asarray([norm(pet)*255,norm(ct)*255,norm(stl)*255])
-    x = x.astype('uint16')
-    print(x.shape)
+#    print(x.shape)
     
     if dcm_sample_ct != None:
         meta = load_meta(path_ct + dcm_sample_ct)
@@ -320,19 +325,22 @@ def combine_as_tif(out_path, path_stl, path_ct, path_pet, dcm_sample_ct = None, 
         meta = meta + load_meta(path_pet + dcm_sample_pet)
         
     save_as_tif(out_path,x,meta)
+    print(x.shape)
     
     return x
     
         
 if __name__ == "__main__":
     #path_stl = 'C:/Users/Ilka/Desktop/Northwestern/Hope rotation/WholeBody'
-    path_stl = None
+    #path_stl = None
     path_ct = 'C:/Users/Ilka/Desktop/Northwestern/Hope rotation/ct scan/RM-S302 NIRC-8791-2001_S302-Zr89-VRC01-aCARIAS-24h-5Nov2020_CT_2020-11-05_115133_._LDCT_n200__00000'
     ct_img = '/1.2.840.113704.1.111.2148.1604598918.175'
     path_pet = 'C:/Users/Ilka/Desktop/Northwestern/Hope rotation/pt scan/RM-S302 NIRC-8791-2001_S302-Zr89-VRC01-aCARIAS-24h-5Nov2020_PT_2020-11-05_115710_._(WB.CTAC).Body_n150__00000'
     pet_img = '/1.3.46.670589.28.2.15.4.9181.50123.3.580.0.1604600691'
     path_out = 'C:/Users/Ilka/Desktop/Northwestern/Hope rotation/'
-    x = combine_as_tif(path_out,path_stl,path_ct,path_pet,ct_img,pet_img)   
-    for i in range(x.shape[1]):
-        plt.imshow(x[:,i].T)
+    x = combine_as_tif(path_out,path_ct,path_pet,ct_img,pet_img)   
+    for i in range(10,x.shape[1],10):
+        plt.imshow(x[0,i])
+        plt.show()
+        plt.imshow(x[1,i])
         plt.show()
